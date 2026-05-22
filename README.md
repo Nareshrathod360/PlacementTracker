@@ -3,6 +3,23 @@
 A full-stack web application to help students track their coding practice, notes, and progress for campus placements.
 
 ---
+# Placement Tracker
+```
+## Login Page
+![Login](screenshots/login.png)
+
+## Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+## Problems Page
+![Problems](screenshots/problems.png)
+
+## Notes Page
+![Notes](screenshots/notes.png)
+
+## Progress Page
+![Progress](screenshots/progress.png)
+```
 
 ## 📁 Project Structure
 
