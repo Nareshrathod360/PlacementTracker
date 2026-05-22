@@ -6,50 +6,28 @@ A full-stack web application to help students track their coding practice, notes
 
 ## 📁 Project Structure
 
-```
+```text
 PlacementTracker/
-├── pom.xml                          ← Maven build file
+├── pom.xml
 ├── database/
-│   └── setup.sql                   ← Run this first in MySQL
+│   └── setup.sql
 └── src/
     └── main/
         ├── java/com/placement/
-        │   ├── model/               ← POJO model classes
-        │   │   ├── User.java
-        │   │   ├── Problem.java
-        │   │   └── Note.java
-        │   ├── dao/                 ← Database access layer (JDBC)
-        │   │   ├── UserDAO.java
-        │   │   ├── ProblemDAO.java
-        │   │   └── NoteDAO.java
-        │   ├── servlet/             ← MVC Controllers (Servlets)
-        │   │   ├── AuthServlet.java
-        │   │   ├── AuthErrorServlet.java
-        │   │   ├── SessionServlet.java
-        │   │   ├── DashboardServlet.java
-        │   │   ├── ProblemServlet.java
-        │   │   └── NoteServlet.java
-        │   └── util/                ← Utility classes
-        │       ├── DBConnection.java
-        │       └── PasswordUtil.java
+        │   ├── model/
+        │   ├── dao/
+        │   ├── servlet/
+        │   └── util/
         └── webapp/
-            ├── index.html           ← Login / Register page
-            ├── dashboard.html       ← Dashboard with stats
-            ├── problems.html        ← Problem tracker
-            ├── notes.html           ← Notes manager
-            ├── progress.html        ← Analytics & charts
+            ├── index.html
+            ├── dashboard.html
+            ├── problems.html
+            ├── notes.html
+            ├── progress.html
             ├── css/
-            │   └── style.css
             ├── js/
-            │   ├── app.js           ← Shared utilities
-            │   ├── problems.js      ← Problems page logic
-            │   └── notes.js         ← Notes page logic
             └── WEB-INF/
-                └── web.xml
 ```
-
----
-
 ## 🗃️ Database Schema
 
 ```sql
@@ -62,20 +40,18 @@ daily_streak (id, user_id, solve_date, problems_solved)
 ---
 
 ## ⚙️ Setup Instructions
-
+```
 ### Prerequisites
-| Tool | Version |
-|------|---------|
-| Java JDK | 11 or higher |
-| Apache Tomcat | 9.x or 10.x |
-| MySQL | 8.x |
-| Maven | 3.6+ |
-| IDE | IntelliJ IDEA / Eclipse (recommended) |
+| Tool
+| Java JDK 11+
+| Apache Tomcat 10.x 
+| MySQL  8.x 
+| Maven 3.6+ 
 
 ---
 
 ### Step 1 — Set Up MySQL Database
-
+```
 1. Open MySQL Workbench or any MySQL client.
 2. Run the setup script:
    ```bash
@@ -88,7 +64,6 @@ daily_streak (id, user_id, solve_date, problems_solved)
    USE placement_tracker;
    SHOW TABLES;
    ```
-
 ---
 
 ### Step 2 — Configure Database Connection
@@ -126,15 +101,6 @@ Then start Tomcat:
 /path/to/tomcat/bin/startup.bat       # Windows
 ```
 
-**Option B — IntelliJ IDEA:**
-1. Go to `Run > Edit Configurations`
-2. Add a new `Tomcat Server > Local` configuration
-3. In the `Deployment` tab, add the artifact `PlacementTracker:war exploded`
-4. Set Application context to `/PlacementTracker` (or `/`)
-5. Click Run ▶
-
----
-
 ### Step 5 — Access the App
 
 Open your browser and go to:
@@ -143,8 +109,8 @@ http://localhost:8080/PlacementTracker/
 ```
 
 **Test login credentials (from sample data):**
-- Email: `demo@test.com`
-- Password: `password123`
+- Email: `harsha@gmail.com`
+- Password: `123456`
 
 > **Note:** The sample user in `setup.sql` has a plain-text password for testing. After your first real registration via the app UI, passwords are properly hashed.
 
@@ -155,10 +121,9 @@ http://localhost:8080/PlacementTracker/
 | Feature | Description |
 |---------|-------------|
 | 🔐 Auth | Register/Login with SHA-256 hashed passwords |
-| 📊 Dashboard | Stats overview, charts, recent activity |
-| 💻 Problems | Add/edit/delete/search/filter coding problems |
+|📊 Dashboard Analytics| Stats overview, charts, recent activity |
+| 💻 Problem Tracker | Add/edit/delete/search/filter coding problems |
 | ⭐ Favourites | Star important problems |
-| 🔄 Quick Status | Change problem status directly in the table |
 | 📝 Notes | Create/edit/delete notes with full-text search |
 | 📈 Progress | Difficulty breakdown, solve rate, stacked charts |
 | 🔥 Streak | Daily streak tracking |
