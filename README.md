@@ -25,6 +25,7 @@ A full-stack web application to help students track their coding practice, notes
 
 ```text
 PlacementTracker/
+├── screenshots/
 ├── pom.xml
 ├── database/
 │   └── setup.sql
@@ -211,6 +212,12 @@ http://localhost:8080/PlacementTracker/
 - **Server:** Apache Tomcat 9/10
 
 ---
+## Future Improvements
+
+- Dark Mode
+- Coding Streak Graphs
+- Online Judge API Integration
+- AI-based Recommendations
 
 *Built for placement prep. Track. Practice. Succeed. 🚀*
 =======
