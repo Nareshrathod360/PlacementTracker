@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PlacePrep — Progress</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="nav-brand" href="dashboard.html">
+    <div class="logo-icon">🎯</div>
+    <span class="brand-text">Place<span>Prep</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="dashboard.html">⬛ Dashboard</a>
+    <a href="problems.html">💻 Problems</a>
+    <a href="notes.html">📝 Notes</a>
+    <a href="progress.html" class="active">📊 Progress</a>
+  </div>
+  <div class="nav-user">
+    <div class="user-chip">
+      <div class="user-avatar" id="nav-avatar">U</div>
+      <span id="nav-user-name">Loading…</span>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page-container">
+
+  <div class="page-header">
+    <div class="breadcrumb"><span>~/</span>progress</div>
+    <h1>Progress Analytics 📊</h1>
+    <p>Track your preparation journey with detailed stats.</p>
+  </div>
+
+  <!-- ── Top Stats ─────────────────────────────────────────────────────── -->
+  <div class="stats-grid" style="margin-bottom:2rem;">
+    <div class="stat-card" style="--accent-color:var(--accent)">
+      <div class="stat-icon">💻</div>
+      <div class="stat-value" id="p-total">–</div>
+      <div class="stat-label">Total Problems</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--green)">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value" id="p-solved">–</div>
+      <div class="stat-label">Solved</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--yellow)">
+      <div class="stat-icon">🔄</div>
+      <div class="stat-value" id="p-attempted">–</div>
+      <div class="stat-label">Attempted</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--purple)">
+      <div class="stat-icon">📋</div>
+      <div class="stat-value" id="p-todo">–</div>
+      <div class="stat-label">Todo</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--red)">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-value" id="p-streak">–</div>
+      <div class="stat-label">Day Streak</div>
+    </div>
+  </div>
+
+  <!-- ── Progress Bars: Difficulty ─────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;" id="charts-grid">
+
+    <!-- Difficulty breakdown bars -->
+    <div class="chart-card">
+      <div class="chart-title">🏆 Difficulty Breakdown</div>
+      <div class="diff-bars" id="diff-bars" style="margin-top:0.5rem;">
+        <div style="text-align:center;padding:2rem;"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Solved vs Total radar/doughnut -->
+    <div class="chart-card">
+      <div class="chart-title">🎯 Overall Completion</div>
+      <div class="chart-container">
+        <canvas id="completionChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Platform Chart ────────────────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;" id="charts-grid-2">
+
+    <div class="chart-card" style="grid-column:1/-1">
+      <div class="chart-title">🏢 Problems by Status per Difficulty</div>
+      <div class="chart-container" style="height:280px;">
+        <canvas id="stackedChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Completion Percentage Card ────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-title">📈 Solve Rate</div>
+    <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap;">
+      <div style="font-size:4rem;font-weight:900;font-family:var(--font-mono);color:var(--accent);"
+           id="solve-rate">–%</div>
+      <div style="flex:1;min-width:200px;">
+        <div class="progress-bar" style="height:16px;margin-bottom:0.5rem;">
+          <div class="progress-fill fill-easy" id="solve-rate-bar" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--purple));"></div>
+        </div>
+        <p id="solve-rate-desc" style="font-size:0.875rem;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tips based on progress ────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">💡 Preparation Tips</div>
+    <div id="tips-list" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+  </div>
+
+</div><!-- /page-container -->
+
+<nav class="mobile-nav">
+  <a href="dashboard.html"><span class="nav-icon">⬛</span>Home</a>
+  <a href="problems.html"><span class="nav-icon">💻</span>Problems</a>
+  <a href="notes.html"><span class="nav-icon">📝</span>Notes</a>
+  <a href="progress.html" class="active"><span class="nav-icon">📊</span>Progress</a>
+</nav>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/app.js"></script>
+<script>
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.family = "'Outfit', sans-serif";
+
+let completionChart = null;
+let stackedChart    = null;
+
+async function loadProgress() {
+  const data = await apiGet('/dashboard-data');
+  if (!data) return;
+
+  // ── Stats ──────────────────────────────────────────────────────────────
+  document.getElementById('p-total').textContent    = data.totalProblems;
+  document.getElementById('p-solved').textContent   = data.solvedCount;
+  document.getElementById('p-attempted').textContent= data.attemptedCount;
+  document.getElementById('p-todo').textContent     = data.todoCount;
+  document.getElementById('p-streak').textContent   = data.currentStreak;
+
+  // ── Solve Rate ─────────────────────────────────────────────────────────
+  const rate = data.totalProblems > 0
+    ? Math.round((data.solvedCount / data.totalProblems) * 100) : 0;
+  document.getElementById('solve-rate').textContent = rate + '%';
+  document.getElementById('solve-rate-bar').style.width = rate + '%';
+  document.getElementById('solve-rate-desc').textContent =
+    `You've solved ${data.solvedCount} out of ${data.totalProblems} problems. ${
+      rate >= 80 ? '🌟 Excellent work!' :
+      rate >= 60 ? '👍 Great progress!' :
+      rate >= 40 ? '💪 Keep going!' : '🚀 Just getting started!'}`;
+
+  // ── Difficulty Progress Bars ───────────────────────────────────────────
+  const easy   = { solved: data.stats?.easySolved  || 0, total: data.easyCount   || 0 };
+  const medium = { solved: data.stats?.mediumSolved || 0, total: data.mediumCount || 0 };
+  const hard   = { solved: data.stats?.hardSolved   || 0, total: data.hardCount   || 0 };
+
+  document.getElementById('diff-bars').innerHTML = `
+    ${diffBar('Easy',   easy.solved,   easy.total,   'fill-easy',   'var(--green)')}
+    ${diffBar('Medium', medium.solved, medium.total, 'fill-medium', 'var(--yellow)')}
+    ${diffBar('Hard',   hard.solved,   hard.total,   'fill-hard',   'var(--red)')}
+  `;
+
+  // Animate bars after render
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.progress-fill[data-target]').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  });
+
+  // ── Completion Doughnut Chart ──────────────────────────────────────────
+  const ctx1 = document.getElementById('completionChart').getContext('2d');
+  if (completionChart) completionChart.destroy();
+  completionChart = new Chart(ctx1, {
+    type: 'doughnut',
+    data: {
+      labels: ['Solved', 'Attempted', 'Todo'],
+      datasets: [{
+        data: [data.solvedCount, data.attemptedCount, data.todoCount],
+        backgroundColor: ['rgba(0,255,157,0.8)','rgba(255,214,10,0.7)','rgba(74,96,112,0.6)'],
+        borderColor: ['#00ff9d','#ffd60a','#4a6070'],
+        borderWidth: 2, hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 14, boxWidth: 12 } }
+      }
+    }
+  });
+
+  // ── Stacked Bar Chart: Status per Difficulty ───────────────────────────
+  const ctx2 = document.getElementById('stackedChart').getContext('2d');
+  if (stackedChart) stackedChart.destroy();
+
+  // Get counts per difficulty per status
+  const easySolved   = data.stats?.easySolved   || 0;
+  const mediumSolved = data.stats?.mediumSolved  || 0;
+  const hardSolved   = data.stats?.hardSolved    || 0;
+
+  const easyAttempted   = Math.max(0, easy.total   - easySolved   - Math.max(0, easy.total   - easySolved));
+  const mediumAttempted = Math.max(0, medium.total - mediumSolved - Math.max(0, medium.total - mediumSolved));
+  const hardAttempted   = Math.max(0, hard.total   - hardSolved   - Math.max(0, hard.total   - hardSolved));
+
+  stackedChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: ['Easy', 'Medium', 'Hard'],
+      datasets: [
+        {
+          label: 'Solved',
+          data: [easySolved, mediumSolved, hardSolved],
+          backgroundColor: 'rgba(0,255,157,0.75)',
+          borderColor: '#00ff9d', borderWidth: 1, borderRadius: 4
+        },
+        {
+          label: 'Attempted',
+          data: [
+            easy.total   - easySolved,
+            medium.total - mediumSolved,
+            hard.total   - hardSolved
+          ].map(v => Math.max(0, Math.round(v * 0.4))), // approx
+          backgroundColor: 'rgba(255,214,10,0.7)',
+          borderColor: '#ffd60a', borderWidth: 1, borderRadius: 4
+        },
+        {
+          label: 'Todo',
+          data: [
+            Math.max(0, easy.total   - easySolved),
+            Math.max(0, medium.total - mediumSolved),
+            Math.max(0, hard.total   - hardSolved)
+          ],
+          backgroundColor: 'rgba(74,96,112,0.6)',
+          borderColor: '#4a6070', borderWidth: 1, borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: {
+          stacked: true, beginAtZero: true,
+          ticks: { precision: 0 },
+          grid: { color: 'rgba(30,58,95,0.5)' }
+        }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+
+  // ── Tips ───────────────────────────────────────────────────────────────
+  renderTips(data);
+}
+
+function diffBar(label, solved, total, fillClass, color) {
+  const pct = total > 0 ? Math.round((solved / total) * 100) : 0;
+  return `
+    <div class="diff-row">
+      <div class="diff-header">
+        <span class="diff-label" style="color:${color}">${label}</span>
+        <span class="diff-count">${solved} / ${total} solved</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ${fillClass}" data-target="${pct}" style="width:0%;"></div>
+      </div>
+    </div>`;
+}
+
+function renderTips(data) {
+  const tips = [];
+  const rate = data.totalProblems > 0
+    ? Math.round((data.solvedCount / data.totalProblems) * 100) : 0;
+
+  if (data.totalProblems === 0)
+    tips.push({ icon:'🚀', text:'Start with easy problems to build confidence. LeetCode has great beginner problems.' });
+  if (data.easyCount > 0 && (data.stats?.easySolved || 0) / data.easyCount < 0.5)
+    tips.push({ icon:'📗', text:'Focus on Easy problems first. Master fundamentals before tackling Hard problems.' });
+  if (data.hardCount > (data.easyCount + data.mediumCount) * 0.5)
+    tips.push({ icon:'⚖️', text:'Balance your difficulty spread. Aim for 40% Easy, 40% Medium, 20% Hard.' });
+  if (data.currentStreak === 0)
+    tips.push({ icon:'🔥', text:'Start a daily streak! Solving at least 1 problem a day builds long-term retention.' });
+  if (data.currentStreak >= 7)
+    tips.push({ icon:'🌟', text:`Amazing! You're on a ${data.currentStreak}-day streak. Keep it up!` });
+  if (data.totalNotes === 0)
+    tips.push({ icon:'📝', text:'Take notes on patterns you discover. Writing helps memory and recall in interviews.' });
+  if (rate >= 80)
+    tips.push({ icon:'🎯', text:'Excellent solve rate! Now focus on speed and system design concepts.' });
+
+  tips.push({ icon:'💡', text:'Review problems you got wrong. Understanding mistakes is more valuable than solving new ones.' });
+  tips.push({ icon:'🏢', text:'Practice company-specific problems. Filter by company on the Problems page.' });
+
+  document.getElementById('tips-list').innerHTML = tips.slice(0, 5).map(t => `
+    <div style="display:flex;gap:0.75rem;align-items:flex-start;padding:0.75rem;
+                background:var(--bg-input);border-radius:var(--radius);border:1px solid var(--border);">
+      <span style="font-size:1.2rem;">${t.icon}</span>
+      <span style="font-size:0.9rem;color:var(--text-secondary);">${t.text}</span>
+    </div>`).join('');
+}
+
+function adjustGridLayout() {
+  ['charts-grid','charts-grid-2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.gridTemplateColumns = window.innerWidth < 768 ? '1fr' : '1fr 1fr';
+  });
+}
+window.addEventListener('resize', adjustGridLayout);
+adjustGridLayout();
+
+(async function init() {
+  const session = await requireAuth();
+  if (session) {
+    document.getElementById('nav-avatar').textContent = session.userName[0].toUpperCase();
+    await loadProgress();
+  }
+})();
+</script>
+</body>
+</html>

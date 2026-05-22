@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PlacePrep — Problems</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <a class="nav-brand" href="dashboard.html">
+    <div class="logo-icon">🎯</div>
+    <span class="brand-text">Place<span>Prep</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="dashboard.html">⬛ Dashboard</a>
+    <a href="problems.html" class="active">💻 Problems</a>
+    <a href="notes.html">📝 Notes</a>
+    <a href="progress.html">📊 Progress</a>
+  </div>
+  <div class="nav-user">
+    <div class="user-chip">
+      <div class="user-avatar" id="nav-avatar">U</div>
+      <span id="nav-user-name">Loading…</span>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<div class="page-container">
+
+  <div class="page-header">
+    <div class="breadcrumb"><span>~/</span>problems</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <h1>Problem Tracker 💻</h1>
+        <p>Track every coding problem you've practiced.</p>
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('problems-table','problems.csv')">
+          ⬇ Export CSV
+        </button>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          + Add Problem
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter / Search Bar -->
+  <div class="filter-bar">
+    <div class="search-input-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" class="form-control"
+             placeholder="Search problems…" oninput="debouncedLoad()"/>
+    </div>
+    <select id="filter-difficulty" class="form-control" onchange="loadProblems()">
+      <option value="">All Difficulties</option>
+      <option value="Easy">Easy</option>
+      <option value="Medium">Medium</option>
+      <option value="Hard">Hard</option>
+    </select>
+    <select id="filter-platform" class="form-control" onchange="loadProblems()">
+      <option value="">All Platforms</option>
+      <option value="LeetCode">LeetCode</option>
+      <option value="HackerRank">HackerRank</option>
+      <option value="CodeChef">CodeChef</option>
+      <option value="GeeksForGeeks">GeeksForGeeks</option>
+      <option value="Codeforces">Codeforces</option>
+      <option value="AtCoder">AtCoder</option>
+      <option value="Other">Other</option>
+    </select>
+    <input type="text" id="filter-company" class="form-control"
+           placeholder="Filter by company…" oninput="debouncedLoad()" style="min-width:160px;"/>
+    <button class="btn btn-secondary btn-sm" onclick="clearFilters()">✕ Clear</button>
+  </div>
+
+  <!-- Summary chips -->
+  <div id="summary-chips" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;"></div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table class="data-table" id="problems-table">
+      <thead>
+        <tr>
+          <th>⭐</th>
+          <th>Problem Name</th>
+          <th>Platform</th>
+          <th>Difficulty</th>
+          <th>Status</th>
+          <th>Company</th>
+          <th>Added</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="problems-tbody">
+        <tr><td colspan="8" style="text-align:center;padding:3rem;">
+          <div class="spinner"></div>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /page-container -->
+
+<!-- ── Add / Edit Problem Modal ─────────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="problem-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title">Add Problem</h3>
+      <button class="modal-close" onclick="closeModal('problem-modal')">✕</button>
+    </div>
+
+    <form id="problem-form" onsubmit="submitProblem(event)">
+      <input type="hidden" id="edit-id" value=""/>
+
+      <div class="form-group">
+        <label class="form-label">Problem Name *</label>
+        <input type="text" id="p-name" class="form-control"
+               placeholder="e.g. Two Sum" required/>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Platform *</label>
+          <select id="p-platform" class="form-control" required>
+            <option value="">Select platform…</option>
+            <option>LeetCode</option>
+            <option>HackerRank</option>
+            <option>CodeChef</option>
+            <option>GeeksForGeeks</option>
+            <option>Codeforces</option>
+            <option>AtCoder</option>
+            <option>InterviewBit</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Difficulty *</label>
+          <select id="p-difficulty" class="form-control" required>
+            <option value="">Select…</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Status *</label>
+          <select id="p-status" class="form-control" required>
+            <option value="">Select…</option>
+            <option value="Solved">Solved</option>
+            <option value="Attempted">Attempted</option>
+            <option value="Todo">Todo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Company</label>
+          <input type="text" id="p-company" class="form-control"
+                 placeholder="e.g. Google"/>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('problem-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="modal-submit-btn">Add Problem</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Mobile Nav -->
+<nav class="mobile-nav">
+  <a href="dashboard.html"><span class="nav-icon">⬛</span>Home</a>
+  <a href="problems.html" class="active"><span class="nav-icon">💻</span>Problems</a>
+  <a href="notes.html"><span class="nav-icon">📝</span>Notes</a>
+  <a href="progress.html"><span class="nav-icon">📊</span>Progress</a>
+</nav>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/app.js"></script>
+<script src="js/problems.js"></script>
+</body>
+</html>

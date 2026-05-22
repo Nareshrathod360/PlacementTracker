@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PlacePrep — Dashboard</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <!-- Chart.js for progress charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <a class="nav-brand" href="dashboard.html">
+    <div class="logo-icon">🎯</div>
+    <span class="brand-text">Leet<span>Me</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="./dashboard.html" class="active">⬛ Dashboard</a>
+    <a href="./problems.html">💻 Problems</a>
+    <a href="./notes.html">📝 Notes</a>
+    <a href="./progress.html">📊 Progress</a>
+  </div>
+  <div class="nav-user">
+    <div class="user-chip">
+      <div class="user-avatar" id="nav-avatar">U</div>
+      <span id="nav-user-name">Loading…</span>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<!-- ── Main Content ─────────────────────────────────────────────────────── -->
+<div class="page-container">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="breadcrumb"><span>~/</span>dashboard</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <h1 id="greeting">Good morning! 👋</h1>
+        <p>Here's your placement preparation summary.</p>
+      </div>
+      <div id="streak-badge-wrap"></div>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card" style="--accent-color:var(--accent)">
+      <div class="stat-icon">💻</div>
+      <div class="stat-value" id="stat-total">–</div>
+      <div class="stat-label">Total Problems</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--green)">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value" id="stat-solved">–</div>
+      <div class="stat-label">Problems Solved</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--purple)">
+      <div class="stat-icon">📝</div>
+      <div class="stat-value" id="stat-notes">–</div>
+      <div class="stat-label">Notes Created</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--yellow)">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-value" id="stat-streak">–</div>
+      <div class="stat-label">Day Streak</div>
+    </div>
+  </div>
+
+  <!-- Two-column layout: Charts + Recent Activity -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;" id="main-grid">
+
+    <!-- Doughnut chart: Status breakdown -->
+    <div class="chart-card">
+      <div class="chart-title">📊 Problem Status</div>
+      <div class="chart-container">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Bar chart: Difficulty breakdown -->
+    <div class="chart-card">
+      <div class="chart-title">📈 Difficulty Breakdown</div>
+      <div class="chart-container">
+        <canvas id="diffChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <div class="card-title">🕓 Recent Problems</div>
+      <a href="problems.html" class="btn btn-secondary btn-sm">View All →</a>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table" id="recent-table">
+        <thead>
+          <tr>
+            <th>Problem</th>
+            <th>Platform</th>
+            <th>Difficulty</th>
+            <th>Status</th>
+            <th>Company</th>
+            <th>Added</th>
+          </tr>
+        </thead>
+        <tbody id="recent-tbody">
+          <tr><td colspan="6" style="text-align:center;padding:2rem;">
+            <div class="spinner"></div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page-container -->
+
+<!-- Mobile Nav -->
+<nav class="mobile-nav">
+  <a href="dashboard.html" class="active"><span class="nav-icon">⬛</span>Home</a>
+  <a href="problems.html"><span class="nav-icon">💻</span>Problems</a>
+  <a href="notes.html"><span class="nav-icon">📝</span>Notes</a>
+  <a href="progress.html"><span class="nav-icon">📊</span>Progress</a>
+</nav>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/app.js"></script>
+<script>
+// ── Chart instances (need to keep reference to destroy on reload) ──────────
+let statusChartInst = null;
+let diffChartInst   = null;
+
+// ── Chart.js defaults for dark theme ───────────────────────────────────────
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.family = "'Outfit', sans-serif";
+
+// ── Greeting ────────────────────────────────────────────────────────────────
+function setGreeting(name) {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+  const icons = { morning: '🌅', afternoon: '☀️', evening: '🌙' };
+  document.getElementById('greeting').textContent =
+    `Good ${part}, ${name}! ${icons[part]}`;
+}
+
+// ── Load Dashboard Data ─────────────────────────────────────────────────────
+async function loadDashboard() {
+  const data = await apiGet('/dashboard-data');
+  if (!data) return;
+
+  // Greeting
+  setGreeting(data.userName || 'Student');
+
+  // Stats
+  document.getElementById('stat-total').textContent  = data.totalProblems;
+  document.getElementById('stat-solved').textContent = data.solvedCount;
+  document.getElementById('stat-notes').textContent  = data.totalNotes;
+  document.getElementById('stat-streak').textContent = data.currentStreak;
+
+  // Streak badge
+  if (data.currentStreak > 0) {
+    document.getElementById('streak-badge-wrap').innerHTML =
+      `<div class="streak-badge">🔥 ${data.currentStreak}-day streak!</div>`;
+  }
+
+  // Render charts
+  renderStatusChart(data.solvedCount, data.attemptedCount, data.todoCount);
+  renderDiffChart(data.easyCount, data.mediumCount, data.hardCount);
+
+  // Recent problems table
+  renderRecentTable(data.recentProblems || []);
+}
+
+// ── Status Doughnut Chart ───────────────────────────────────────────────────
+function renderStatusChart(solved, attempted, todo) {
+  const ctx = document.getElementById('statusChart').getContext('2d');
+  if (statusChartInst) statusChartInst.destroy();
+  statusChartInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Solved', 'Attempted', 'Todo'],
+      datasets: [{
+        data: [solved, attempted, todo],
+        backgroundColor: ['rgba(0,255,157,0.8)', 'rgba(255,214,10,0.8)', 'rgba(74,96,112,0.8)'],
+        borderColor: ['#00ff9d', '#ffd60a', '#4a6070'],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.raw} problems`
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Difficulty Bar Chart ────────────────────────────────────────────────────
+function renderDiffChart(easy, medium, hard) {
+  const ctx = document.getElementById('diffChart').getContext('2d');
+  if (diffChartInst) diffChartInst.destroy();
+  diffChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Easy', 'Medium', 'Hard'],
+      datasets: [{
+        label: 'Problems',
+        data: [easy, medium, hard],
+        backgroundColor: [
+          'rgba(0,255,157,0.7)',
+          'rgba(255,214,10,0.7)',
+          'rgba(255,77,109,0.7)'
+        ],
+        borderColor: ['#00ff9d', '#ffd60a', '#ff4d6d'],
+        borderWidth: 2,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 },
+          grid: { color: 'rgba(30,58,95,0.5)' }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Recent Problems Table ───────────────────────────────────────────────────
+function renderRecentTable(problems) {
+  const tbody = document.getElementById('recent-tbody');
+  if (!problems.length) {
+    tbody.innerHTML = `<tr><td colspan="6">
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>No problems yet</h3>
+        <p>Start by adding your first problem!</p>
+        <a href="problems.html" class="btn btn-primary" style="margin-top:1rem;">Add Problem</a>
+      </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = problems.map(p => `
+    <tr>
+      <td style="font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+          title="${esc(p.problemName)}">${esc(p.problemName)}</td>
+      <td><span class="mono" style="color:var(--accent);font-size:0.8rem;">${esc(p.platform)}</span></td>
+      <td><span class="badge badge-${p.difficulty.toLowerCase()}">${p.difficulty}</span></td>
+      <td><span class="badge badge-${p.status.toLowerCase()}">${p.status}</span></td>
+      <td>${esc(p.company || '—')}</td>
+      <td class="mono muted" style="font-size:0.78rem;">${formatDate(p.dateAdded)}</td>
+    </tr>`).join('');
+}
+
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Make chart grid responsive ──────────────────────────────────────────────
+function adjustGridLayout() {
+  const grid = document.getElementById('main-grid');
+  if (window.innerWidth < 768) {
+    grid.style.gridTemplateColumns = '1fr';
+  } else {
+    grid.style.gridTemplateColumns = '1fr 1fr';
+  }
+}
+window.addEventListener('resize', adjustGridLayout);
+adjustGridLayout();
+
+// ── Init ────────────────────────────────────────────────────────────────────
+(async function init() {
+  const session = await requireAuth();
+  if (session) {
+    document.getElementById('nav-avatar').textContent = session.userName[0].toUpperCase();
+    await loadDashboard();
+  }
+})();
+</script>
+</body>
+</html>
